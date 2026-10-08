@@ -1,72 +1,45 @@
 import { useState } from 'react'
 
 import {
-  Activity,
   AlertTriangle,
   Search,
 } from 'lucide-react'
 
 import PageHeader from '../components/common/pageheader'
-import EmptyState from '../components/common/emptystate'
+import LoadingState from '../components/common/loadingstate'
 import RiskBadge from '../components/common/riskbadge'
 import Button from '../components/ui/button'
+
+import {
+  movementStages,
+} from '../data/mockData'
 
 import {
   analyzeMovement,
 } from '../services/api'
 
 export default function Movement() {
-
   const [batchId, setBatchId] =
-    useState('')
+    useState('PT-2026-00124')
 
   const [result, setResult] =
-    useState(null)
+    useState(false)
 
   const [loading, setLoading] =
     useState(false)
 
-  const [error, setError] =
-    useState('')
-
   const run = async () => {
-
     if (!batchId.trim()) return
 
     setLoading(true)
-    setError('')
-    setResult(null)
 
     try {
-
-      const response =
-        await analyzeMovement(
-          batchId
-        )
-
-      setResult(
-        response.data
-      )
-
-    } catch (err) {
-
-      console.error(err)
-
-      setError(
-        'Unable to analyze batch movement. Please check that the backend is running.'
-      )
-
+      await analyzeMovement()
+      setResult(true)
     } finally {
-
       setLoading(false)
-
     }
   }
-
-  const stages =
-    result?.stages ||
-    result?.movementStages ||
-    []
 
   return (
     <>
@@ -76,9 +49,7 @@ export default function Movement() {
       />
 
       <section className="card movement-input">
-
         <div>
-
           <span className="eyebrow">
             BATCH LOOKUP
           </span>
@@ -86,224 +57,142 @@ export default function Movement() {
           <h3>
             Enter a batch ID to begin
           </h3>
-
         </div>
 
         <div className="input-action">
-
           <input
             value={batchId}
-            onChange={(event) =>
-              setBatchId(
-                event.target.value
-              )
+            onChange={(e) =>
+              setBatchId(e.target.value)
             }
             placeholder="Enter Batch ID"
           />
 
           <Button
             onClick={run}
-            disabled={
-              loading ||
-              !batchId.trim()
-            }
+            disabled={loading}
           >
-
             {loading ? (
-              <>
-                <Activity
-                  className="spin"
-                  size={16}
-                />
-                Analyzing...
-              </>
+              'Analyzing...'
             ) : (
               <>
                 <Search size={16} />
                 Analyze movement
               </>
             )}
-
           </Button>
-
         </div>
-
-        {error && (
-          <div className="form-error">
-            {error}
-          </div>
-        )}
-
       </section>
 
-      {result && (
+      {loading && (
+        <LoadingState
+          message="Analyzing batch movement..."
+        />
+      )}
 
+      {result && !loading && (
         <div className="movement-results">
-
           <section className="card">
-
             <div className="card-heading">
-
               <div>
-
                 <h3>
                   Supply-chain journey
                 </h3>
 
                 <p>
-                  Batch movement for{' '}
+                  Verified handoffs for{' '}
                   {batchId}
                 </p>
-
               </div>
 
               <RiskBadge
-                level={
-                  result.status ||
-                  result.risk
-                }
+                level="Suspicious Movement"
               />
-
             </div>
 
-            {stages.length > 0 ? (
-
-              <div className="timeline">
-
-                {stages.map(
-                  (stage, index) => (
-
-                    <div
-                      className="timeline-item"
-                      key={
-                        stage.stage ||
-                        index
-                      }
-                    >
-
-                      <div className="timeline-marker">
-
-                        <span>
-                          {index + 1}
-                        </span>
-
-                      </div>
-
-                      <div className="timeline-content">
-
-                        <div>
-
-                          <span className="eyebrow">
-                            {stage.stage ||
-                              'Supply Chain Stage'}
-                          </span>
-
-                          <h4>
-                            {stage.org ||
-                              stage.organization ||
-                              'Organization'}
-                          </h4>
-
-                          <p>
-
-                            {stage.location ||
-                              'Location not available'}
-
-                            {stage.date &&
-                              ` · ${stage.date}`}
-
-                          </p>
-
-                        </div>
-
-                        <RiskBadge
-                          level={
-                            stage.status ||
-                            'Low'
-                          }
-                        />
-
-                      </div>
-
+            <div className="timeline">
+              {movementStages.map(
+                (stage, index) => (
+                  <div
+                    className="timeline-item"
+                    key={stage.stage}
+                  >
+                    <div className="timeline-marker">
+                      <span>
+                        {index + 1}
+                      </span>
                     </div>
 
-                  )
-                )}
+                    <div className="timeline-content">
+                      <div>
+                        <span className="eyebrow">
+                          {stage.stage}
+                        </span>
 
-              </div>
+                        <h4>
+                          {stage.org}
+                        </h4>
 
-            ) : (
+                        <p>
+                          {stage.location} ·{' '}
+                          {stage.date}
+                        </p>
+                      </div>
 
-              <EmptyState
-                message="No movement stages were returned."
-              />
-
-            )}
-
+                      <RiskBadge
+                        level={
+                          stage.status ===
+                          'Flagged'
+                            ? 'High'
+                            : stage.status ===
+                              'Delayed'
+                            ? 'Medium'
+                            : 'Low'
+                        }
+                      />
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
           </section>
 
           <section className="card anomaly-card">
-
             <span className="eyebrow">
               MOVEMENT ANOMALY SCORE
             </span>
 
             <div className="big-score">
-
-              {result.score ?? '--'}
-
-              <small>
-                / 100
-              </small>
-
+              74 <small>/ 100</small>
             </div>
 
             <RiskBadge
-              level={
-                result.status ||
-                result.risk
-              }
+              level="Suspicious Movement"
             />
 
             <p>
-              {result.reason ||
-                result.message ||
-                'Movement analysis completed.'}
+              Batch movement contains an
+              unexpected destination and abnormal
+              travel duration compared with the
+              expected route.
             </p>
 
-            {Array.isArray(
-              result.factors
-            ) &&
-              result.factors.length > 0 && (
-
-                <div className="factor-list">
-
-                  {result.factors.map(
-                    (factor) => (
-
-                      <span key={factor}>
-
-                        <AlertTriangle
-                          size={14}
-                        />
-
-                        {factor}
-
-                      </span>
-
-                    )
-                  )}
-
-                </div>
-
-              )}
-
+            <div className="factor-list">
+              {[
+                'Unexpected location',
+                'Unknown distributor',
+                'Unusual travel time',
+                'Abnormal route',
+              ].map((item) => (
+                <span key={item}>
+                  <AlertTriangle size={14} />
+                  {item}
+                </span>
+              ))}
+            </div>
           </section>
-
         </div>
-
       )}
-
     </>
   )
 }

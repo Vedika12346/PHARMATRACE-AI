@@ -12,7 +12,9 @@ export default function Logo() {
           PharmaTrace<span>-AI</span>
         </strong>
 
-        <small>SUPPLY CHAIN INTELLIGENCE</small>
+        <small>
+          SUPPLY CHAIN INTELLIGENCE
+        </small>
       </div>
     </div>
   )

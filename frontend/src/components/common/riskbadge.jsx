@@ -1,16 +1,12 @@
-import { riskClass } from './helper'
+import { Activity } from 'lucide-react'
 
-export default function RiskBadge({
-  level,
+export default function LoadingState({
+  message = 'Loading...',
 }) {
   return (
-    <span
-      className={`risk-badge ${riskClass(
-        level
-      )}`}
-    >
-      <i />
-      {level || 'Unknown'}
-    </span>
+    <div className="loading-state">
+      <Activity className="spin" size={20} />
+      <span>{message}</span>
+    </div>
   )
 }

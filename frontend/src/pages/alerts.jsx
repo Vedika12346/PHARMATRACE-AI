@@ -1,21 +1,16 @@
-import {
-  useEffect,
-  useState,
-} from 'react'
+import { useState } from 'react'
 
 import { Search } from 'lucide-react'
 
 import PageHeader from '../components/common/pageheader'
-import EmptyState from '../components/common/emptystate'
-import LoadingState from '../components/common/loadingstate'
 import RiskBadge from '../components/common/riskbadge'
+import EmptyState from '../components/common/emptystate'
 
 import {
-  getAlerts,
-} from '../services/api'
+  alerts,
+} from '../data/mockData'
 
 export default function Alerts() {
-
   const [filter, setFilter] =
     useState('All')
 
@@ -23,63 +18,18 @@ export default function Alerts() {
     useState('')
 
   const [items, setItems] =
-    useState([])
+    useState(alerts)
 
-  const [loading, setLoading] =
-    useState(true)
-
-  useEffect(() => {
-
-    const loadAlerts =
-      async () => {
-
-        try {
-
-          const response =
-            await getAlerts()
-
-          setItems(
-            Array.isArray(
-              response.data
-            )
-              ? response.data
-              : []
-          )
-
-        } catch (error) {
-
-          console.error(
-            'Failed to load alerts:',
-            error
-          )
-
-        } finally {
-
-          setLoading(false)
-
-        }
-
-      }
-
-    loadAlerts()
-
-  }, [])
-
-  const filtered =
-    items.filter(
-      (item) =>
-        (
-          filter === 'All' ||
-          item.level === filter
-        ) &&
-        `${item.id || ''} ${
-          item.reason || ''
-        }`
-          .toLowerCase()
-          .includes(
-            query.toLowerCase()
-          )
-    )
+  const filtered = items.filter(
+    (item) =>
+      (filter === 'All' ||
+        item.level === filter) &&
+      `${item.id} ${item.reason}`
+        .toLowerCase()
+        .includes(
+          query.toLowerCase()
+        )
+  )
 
   return (
     <>
@@ -89,35 +39,28 @@ export default function Alerts() {
       />
 
       <section className="card table-card">
-
         <div className="toolbar">
-
           <div className="search">
-
             <Search size={17} />
 
             <input
               placeholder="Search alerts..."
               value={query}
-              onChange={(event) =>
-                setQuery(
-                  event.target.value
-                )
+              onChange={(e) =>
+                setQuery(e.target.value)
               }
             />
-
           </div>
 
           <div className="filters">
-
             {[
               'All',
               'High',
               'Medium',
               'Low',
             ].map((item) => (
-
               <button
+                type="button"
                 className={
                   filter === item
                     ? 'selected'
@@ -130,33 +73,14 @@ export default function Alerts() {
               >
                 {item}
               </button>
-
             ))}
-
           </div>
-
         </div>
 
-        {loading ? (
-
-          <LoadingState
-            message="Loading alerts..."
-          />
-
-        ) : filtered.length === 0 ? (
-
-          <EmptyState
-            message="No alerts found."
-          />
-
-        ) : (
-
+        {filtered.length ? (
           <div className="table-scroll">
-
             <table>
-
               <thead>
-
                 <tr>
                   <th>Batch ID</th>
                   <th>Risk type</th>
@@ -166,18 +90,14 @@ export default function Alerts() {
                   <th>Status</th>
                   <th />
                 </tr>
-
               </thead>
 
               <tbody>
-
                 {filtered.map(
                   (alert) => (
-
                     <tr
                       key={alert.id}
                     >
-
                       <td>
                         <strong>
                           {alert.id}
@@ -185,9 +105,7 @@ export default function Alerts() {
                       </td>
 
                       <td>
-                        {alert.type ||
-                          alert.riskType ||
-                          '-'}
+                        {alert.type}
                       </td>
 
                       <td>
@@ -199,18 +117,14 @@ export default function Alerts() {
                       </td>
 
                       <td>
-                        {alert.reason ||
-                          '-'}
+                        {alert.reason}
                       </td>
 
                       <td>
-                        {alert.time ||
-                          alert.timestamp ||
-                          '-'}
+                        {alert.time}
                       </td>
 
                       <td>
-
                         <span
                           className={
                             alert.unread
@@ -222,12 +136,11 @@ export default function Alerts() {
                             ? 'Unread'
                             : 'Read'}
                         </span>
-
                       </td>
 
                       <td>
-
                         <button
+                          type="button"
                           className="row-action"
                           onClick={() =>
                             setItems(
@@ -249,22 +162,19 @@ export default function Alerts() {
                             ? 'Mark read'
                             : 'Mark unread'}
                         </button>
-
                       </td>
-
                     </tr>
-
                   )
                 )}
-
               </tbody>
-
             </table>
-
           </div>
-
+        ) : (
+          <EmptyState
+            title="No alerts found"
+            message="No alerts match your current search or filter."
+          />
         )}
-
       </section>
     </>
   )

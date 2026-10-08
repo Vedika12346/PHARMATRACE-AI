@@ -1,12 +1,7 @@
 import {
-  useEffect,
-  useState,
-} from 'react'
-
-import {
   CartesianGrid,
-  LineChart,
   Line,
+  LineChart,
   ResponsiveContainer,
   XAxis,
   YAxis,
@@ -18,85 +13,23 @@ import {
 } from 'react-router-dom'
 
 import PageHeader from '../components/common/pageheader'
-import EmptyState from '../components/common/emptystate'
-import LoadingState from '../components/common/loadingstate'
 import RiskBadge from '../components/common/riskbadge'
 import AnalysisCard from '../components/common/analysiscard'
 import Button from '../components/ui/button'
 
 import {
-  getHistoryDetails,
-} from '../services/api'
+  history,
+  temperatureData,
+} from '../data/mockData'
 
-export default function HistoryDetails() {
-
+export default function Details() {
   const { id } = useParams()
-
   const navigate = useNavigate()
 
-  const [item, setItem] =
-    useState(null)
-
-  const [loading, setLoading] =
-    useState(true)
-
-  useEffect(() => {
-
-    const loadDetails =
-      async () => {
-
-        try {
-
-          const response =
-            await getHistoryDetails(id)
-
-          setItem(
-            response.data
-          )
-
-        } catch (error) {
-
-          console.error(
-            'Failed to load history details:',
-            error
-          )
-
-        } finally {
-
-          setLoading(false)
-
-        }
-
-      }
-
-    loadDetails()
-
-  }, [id])
-
-  if (loading) {
-
-    return (
-      <LoadingState
-        message="Loading batch details..."
-      />
-    )
-
-  }
-
-  if (!item) {
-
-    return (
-      <EmptyState
-        message="Batch details not found."
-      />
-    )
-
-  }
-
-  const temperatureRecords =
-    item.temperatureRecords ||
-    item.records ||
-    []
+  const item =
+    history.find(
+      (record) => record.id === id
+    ) || history[0]
 
   return (
     <>
@@ -116,20 +49,16 @@ export default function HistoryDetails() {
       />
 
       <div className="detail-grid">
-
         <section className="card">
-
           <span className="eyebrow">
             BATCH INFORMATION
           </span>
 
           <h3>
-            {item.medicine ||
-              'Medicine'}
+            {item.medicine}
           </h3>
 
           <div className="detail-facts">
-
             <span>
               <b>Batch ID</b>
               {item.id}
@@ -137,51 +66,40 @@ export default function HistoryDetails() {
 
             <span>
               <b>Manufacturer</b>
-              {item.manufacturer ||
-                '-'}
+              {item.manufacturer}
             </span>
 
             <span>
               <b>Current location</b>
-              {item.location ||
-                '-'}
+              {item.location}
             </span>
 
             <span>
               <b>Analysis date</b>
-              {item.date ||
-                '-'}
+              {item.date}
             </span>
-
           </div>
-
         </section>
 
         <section className="card">
-
           <div className="card-heading">
-
             <div>
-
               <h3>
                 Risk summary
               </h3>
 
               <p>
-                Signals from all
-                analysis modules.
+                Signals from all analysis
+                modules.
               </p>
-
             </div>
 
             <RiskBadge
               level={item.risk}
             />
-
           </div>
 
           <div className="summary-bars">
-
             {[
               [
                 'Counterfeit',
@@ -197,64 +115,42 @@ export default function HistoryDetails() {
               ],
               [
                 'Final risk',
-                item.score ??
-                  item.final,
+                item.score,
               ],
-            ].map(
-              ([label, value]) => (
+            ].map(([label, value]) => (
+              <div key={label}>
+                <span>
+                  {label}
+                  <b>
+                    {value}/100
+                  </b>
+                </span>
 
-                <div key={label}>
-
-                  <span>
-
-                    {label}
-
-                    <b>
-                      {value ?? '-'}
-                      /100
-                    </b>
-
-                  </span>
-
-                  <i>
-
-                    <em
-                      style={{
-                        width: `${
-                          value || 0
-                        }%`,
-                      }}
-                    />
-
-                  </i>
-
-                </div>
-
-              )
-            )}
-
+                <i>
+                  <em
+                    style={{
+                      width: `${value}%`,
+                    }}
+                  />
+                </i>
+              </div>
+            ))}
           </div>
-
         </section>
-
       </div>
 
       <div className="detail-grid">
-
         <AnalysisCard
           type="Counterfeit analysis"
           score={item.counterfeit}
           status={
-            item.counterfeit != null
-              ? item.counterfeit < 40
-                ? 'Genuine'
-                : 'Suspicious'
-              : 'Unknown'
+            item.counterfeit < 40
+              ? 'Genuine'
+              : 'Suspicious'
           }
         />
 
         <section className="card detail-panel">
-
           <span className="eyebrow">
             TEMPERATURE ANALYSIS
           </span>
@@ -263,75 +159,47 @@ export default function HistoryDetails() {
             Cold-chain readings
           </h3>
 
-          {temperatureRecords.length >
-          0 ? (
-
-            <div className="chart">
-
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
+          <div className="chart">
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+            >
+              <LineChart
+                data={temperatureData}
               >
+                <CartesianGrid
+                  stroke="#e2e8f0"
+                  vertical={false}
+                />
 
-                <LineChart
-                  data={
-                    temperatureRecords
-                  }
-                >
+                <XAxis
+                  dataKey="time"
+                  hide
+                />
 
-                  <CartesianGrid
-                    stroke="#e2e8f0"
-                    vertical={false}
-                  />
+                <YAxis
+                  hide
+                  domain={[0, 12]}
+                />
 
-                  <XAxis
-                    dataKey="time"
-                    hide
-                  />
+                <Line
+                  dataKey="temp"
+                  stroke="#4f46e5"
+                  strokeWidth={3}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
 
-                  <YAxis hide />
+          <RiskBadge
+            level="Temperature Violation"
+          />
 
-                  <Line
-                    dataKey="temp"
-                    stroke="#4f46e5"
-                    strokeWidth={3}
-                  />
-
-                </LineChart>
-
-              </ResponsiveContainer>
-
-            </div>
-
-          ) : (
-
-            <EmptyState
-              message="Temperature records are not available for this batch."
-            />
-
-          )}
-
-          {item.temperature !=
-            null && (
-
-            <RiskBadge
-              level={
-                item.temperature >= 40
-                  ? 'Temperature Violation'
-                  : 'Low'
-              }
-            />
-
-          )}
-
-          {item.temperatureReason && (
-            <p>
-              {item.temperatureReason}
-            </p>
-          )}
-
+          <p>
+            Temperature exceeded the allowed
+            range for 1h 48m.
+          </p>
         </section>
-
       </div>
     </>
   )

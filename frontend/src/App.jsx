@@ -1,30 +1,110 @@
-import { useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, NavLink, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { Activity, AlertTriangle, BarChart3, Bell, CheckCircle2, ChevronRight, ClipboardList, CloudUpload, FileSearch, Home, LogOut, Menu, PackageCheck, Search, ShieldCheck, Thermometer, Truck, Upload, X, Zap } from 'lucide-react'
-import { AreaChart, Area, BarChart, Bar, CartesianGrid, Cell, LineChart, Line, PieChart, Pie, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { alerts, batches, history, movementStages, riskData, stats, temperatureData } from './data/mockData'
-import { analyzeCounterfeit, analyzeMovement, analyzeTemperature } from './services/api'
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+} from 'react-router-dom'
 
-const riskClass = (level = 'Low') => ({ High: 'risk-high', Medium: 'risk-medium', Low: 'risk-low', Genuine: 'risk-low', 'Temperature Violation': 'risk-high', 'Suspicious Movement': 'risk-high' }[level] || 'risk-medium')
-function Logo() { return <div className="brand"><div className="brand-mark"><ShieldCheck size={20} /></div><div><strong>PharmaTrace<span>-AI</span></strong><small>SUPPLY CHAIN INTELLIGENCE</small></div></div> }
-const navItems = [['/dashboard', 'Dashboard', Home], ['/counterfeit', 'Counterfeit Detection', FileSearch], ['/temperature', 'Temperature Analysis', Thermometer], ['/movement', 'Batch Movement', Truck], ['/risk-analysis', 'Risk Analysis', BarChart3], ['/alerts', 'Alerts', Bell], ['/history', 'History', ClipboardList]]
-function Sidebar({ open, onClose }) { const navigate = useNavigate(); return <><aside className={`sidebar ${open ? 'open' : ''}`}><div className="sidebar-top"><Logo /><button className="icon-btn mobile-only" onClick={onClose}><X size={19} /></button></div><nav>{navItems.map(([to, label, Icon]) => <NavLink key={to} to={to} onClick={onClose} className={({ isActive }) => isActive ? 'active' : ''}><Icon size={18} /><span>{label}</span>{label === 'Alerts' && <b className="nav-count">3</b>}</NavLink>)}</nav><div className="sidebar-bottom"><div className="user-mini"><div className="avatar">AR</div><div><strong>Dr. Ananya Rao</strong><small>Supply Chain Analyst</small></div></div><button className="logout" onClick={() => { localStorage.removeItem('pharmatrace-auth'); navigate('/login') }}><LogOut size={17} /> Log out</button></div></aside>{open && <button className="scrim" onClick={onClose} aria-label="Close menu" />}</> }
-function Navbar({ onMenu }) { const location = useLocation(); const title = navItems.find(([to]) => to === location.pathname)?.[1] || (location.pathname.startsWith('/history/') ? 'Batch Analysis Details' : 'Dashboard'); return <header className="navbar"><button className="icon-btn mobile-only" onClick={onMenu}><Menu size={20} /></button><div><div className="eyebrow">PHARMATRACE / WORKSPACE</div><h1>{title}</h1></div><div className="nav-actions"><button className="icon-btn notification"><Bell size={18} /><i /></button><div className="avatar">AR</div><div className="desktop-user"><strong>Dr. Ananya Rao</strong><small>Analyst</small></div></div></header> }
-function Layout({ children }) { const [open, setOpen] = useState(false); return <div className="app-shell"><Sidebar open={open} onClose={() => setOpen(false)} /><div className="main-area"><Navbar onMenu={() => setOpen(true)} /><main className="content">{children}</main></div></div> }
-function PageHeader({ title, subtitle, action }) { return <div className="page-header"><div><h2>{title}</h2><p>{subtitle}</p></div>{action}</div> }
-function Button({ children, variant = 'primary', ...props }) { return <button className={`btn ${variant}`} {...props}>{children}</button> }
-function RiskBadge({ level }) { return <span className={`risk-badge ${riskClass(level)}`}><i />{level}</span> }
-function StatCard({ item, Icon }) { return <div className="stat-card"><div className={`stat-icon ${item.tone}`}><Icon size={19} /></div><div><span>{item.label}</span><strong>{item.value}</strong><small className={item.tone === 'rose' ? 'negative' : ''}>{item.change}</small></div></div> }
-function Dashboard() { const navigate = useNavigate(); return <><PageHeader title="Dashboard" subtitle="Monitor pharmaceutical supply-chain risks and batch activity." action={<Button onClick={() => navigate('/counterfeit')}><Zap size={16} /> New analysis</Button>} /><div className="stats-grid">{stats.map((s, i) => <StatCard key={s.label} item={s} Icon={[PackageCheck, AlertTriangle, FileSearch, Thermometer][i]} />)}</div><div className="dashboard-grid"><section className="card chart-card wide"><div className="card-heading"><div><h3>Temperature trend</h3><p>Average readings across active cold-chain batches</p></div><span className="chart-legend"><i className="legend-dot blue" /> Temperature</span></div><div className="chart"><ResponsiveContainer width="100%" height="100%"><AreaChart data={temperatureData}><defs><linearGradient id="tempFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#4f46e5" stopOpacity=".2" /><stop offset="100%" stopColor="#4f46e5" stopOpacity="0" /></linearGradient></defs><CartesianGrid stroke="#e2e8f0" vertical={false} /><XAxis dataKey="time" tickLine={false} axisLine={false} /><YAxis domain={[0, 12]} tickLine={false} axisLine={false} /><Tooltip /><Area type="monotone" dataKey="temp" stroke="#4f46e5" strokeWidth={2.5} fill="url(#tempFill)" /></AreaChart></ResponsiveContainer></div></section><section className="card chart-card"><div className="card-heading"><div><h3>Risk distribution</h3><p>Current batch portfolio</p></div></div><div className="donut-wrap"><ResponsiveContainer width="52%" height={170}><PieChart><Pie data={riskData} dataKey="value" innerRadius={51} outerRadius={72} paddingAngle={3}>{riskData.map((e) => <Cell key={e.name} fill={e.color} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer><div className="donut-total"><strong>1,248</strong><span>Batches</span></div></div><div className="risk-legend">{riskData.map(x => <div key={x.name}><span><i style={{ background: x.color }} />{x.name}</span><strong>{x.value}%</strong></div>)}</div></section></div><div className="dashboard-grid lower"><section className="card"><div className="card-heading"><div><h3>Recent batch activity</h3><p>Latest analyses from your workspace</p></div><button className="link-btn" onClick={() => navigate('/history')}>View all <ChevronRight size={15} /></button></div><div className="activity-list">{batches.slice(0, 3).map(b => <div className="activity-row" key={b.id}><div className="batch-icon"><PackageCheck size={17} /></div><div><strong>{b.id}</strong><span>{b.medicine}</span></div><RiskBadge level={b.risk} /><small>Today</small></div>)}</div></section><section className="card"><div className="card-heading"><div><h3>Recent alerts</h3><p>Items requiring attention</p></div><button className="link-btn" onClick={() => navigate('/alerts')}>View all <ChevronRight size={15} /></button></div><div className="alert-list">{alerts.slice(0, 3).map(a => <div className="alert-row" key={a.id}><div className={`alert-dot ${riskClass(a.level)}`}><AlertTriangle size={14} /></div><div><strong>{a.reason}</strong><span>{a.id} · {a.time}</span></div><RiskBadge level={a.level} /></div>)}</div></section></div><section className="quick-actions"><h3>Quick actions</h3><div><button onClick={() => navigate('/counterfeit')}><FileSearch size={19} /><span>Analyze medicine</span><ChevronRight size={16} /></button><button onClick={() => navigate('/temperature')}><Thermometer size={19} /><span>Analyze temperature</span><ChevronRight size={16} /></button><button onClick={() => navigate('/movement')}><Truck size={19} /><span>Check batch movement</span><ChevronRight size={16} /></button></div></section></> }
-function UploadBox({ accept, onFile, selected, kind }) { return <div className="upload-wrap">{selected ? <div className="selected-file"><div className="file-icon"><Upload size={19} /></div><div><strong>{selected.name}</strong><span>{selected.size ? `${(selected.size / 1024).toFixed(1)} KB` : 'Ready to analyze'}</span></div><button onClick={() => onFile(null)}><X size={17} /></button></div> : <label className="upload-box"><input type="file" accept={accept} onChange={e => onFile(e.target.files[0])} /><div className="upload-icon"><CloudUpload size={22} /></div><strong>Drop your {kind} here, or <u>browse</u></strong><span>Supported format: {accept.replaceAll('.', '').toUpperCase()} · Max 10 MB</span></label>}</div> }
-function AnalysisCard({ type, score, status }) { return <section className="card result-card"><div className="result-top"><div><span className="eyebrow">ANALYSIS RESULT</span><h3>{type}</h3></div><RiskBadge level={status} /></div><div className="score-row"><div className="score-ring" style={{ '--score': `${score * 3.6}deg` }}><strong>{score}</strong><span>/ 100</span></div><div><h4>{status}</h4><p>Analysis completed against registered master data and supply-chain benchmarks.</p></div></div><div className="metric-bars"><div><span>Packaging similarity</span><b>92%</b><i><em style={{ width: '92%' }} /></i></div><div><span>Text consistency</span><b>88%</b><i><em style={{ width: '88%' }} /></i></div><div><span>Route integrity</span><b>62%</b><i><em style={{ width: '62%' }} /></i></div></div></section> }
-function Counterfeit() { const [file, setFile] = useState(null); const [loading, setLoading] = useState(false); const [result, setResult] = useState(false); const run = async () => { setLoading(true); await analyzeCounterfeit(); setLoading(false); setResult(true) }; return <><PageHeader title="Counterfeit medicine detection" subtitle="Upload a medicine package image to analyze authenticity." /><div className="analysis-layout"><section className="card form-card"><div className="section-title"><div className="step-num">01</div><div><h3>Upload package image</h3><p>Use a clear image of the front packaging.</p></div></div><UploadBox accept=".jpg,.jpeg,.png" kind="package image" selected={file} onFile={setFile} /><Button disabled={!file || loading} onClick={run}>{loading ? <><Activity className="spin" size={16} /> Analyzing medicine package...</> : <><FileSearch size={16} /> Analyze medicine</>}</Button></section>{result && <AnalysisCard type="Medicine authenticity" score={22} status="Genuine" />}<section className="card info-card"><div className="card-heading"><div><h3>What we analyze</h3><p>Our visual intelligence checks key authenticity signals.</p></div></div><div className="info-grid"><div><ShieldCheck size={18} /><strong>Packaging similarity</strong><span>Compare visual patterns against trusted references.</span></div><div><ClipboardList size={18} /><strong>OCR extraction</strong><span>Read batch, date, and manufacturer details.</span></div><div><CheckCircle2 size={18} /><strong>Master data match</strong><span>Validate extracted information.</span></div></div></section></div></> }
-function Temperature() { const [file, setFile] = useState(null); const [result, setResult] = useState(false); const [loading, setLoading] = useState(false); const run = async () => { setLoading(true); await analyzeTemperature(); setLoading(false); setResult(true) }; return <><PageHeader title="Cold-chain temperature analysis" subtitle="Upload a temperature log CSV to detect abnormal conditions." /><div className="analysis-layout"><section className="card form-card"><div className="section-title"><div className="step-num">01</div><div><h3>Upload temperature log</h3><p>Analyze readings against the safe 2°C – 8°C range.</p></div></div><UploadBox accept=".csv" kind="CSV log" selected={file} onFile={setFile} /><Button disabled={!file || loading} onClick={run}>{loading ? <><Activity className="spin" size={16} /> Analyzing temperature data...</> : <><Thermometer size={16} /> Analyze temperature</>}</Button></section>{result && <section className="card result-card"><div className="result-top"><div><span className="eyebrow">TEMPERATURE RISK SCORE</span><h3>68 <small>/ 100</small></h3></div><RiskBadge level="Temperature Violation" /></div><div className="chart large"><ResponsiveContainer width="100%" height="100%"><LineChart data={temperatureData}><CartesianGrid stroke="#e2e8f0" vertical={false} /><XAxis dataKey="time" tickLine={false} axisLine={false} /><YAxis domain={[0, 12]} tickLine={false} axisLine={false} /><Tooltip /><Line type="monotone" dataKey="temp" stroke="#ef4444" strokeWidth={3} dot={{ r: 4, fill: '#fff', stroke: '#ef4444', strokeWidth: 2 }} /></LineChart></ResponsiveContainer></div><div className="stat-pills"><span><b>2.1°C</b> Minimum</span><span><b>9.4°C</b> Maximum</span><span><b>01h 48m</b> Violation duration</span></div></section>}</div></> }
-function Movement() { const [batchId, setBatchId] = useState('PT-2026-00124'); const [result, setResult] = useState(false); const [loading, setLoading] = useState(false); const run = async () => { if (!batchId.trim()) return; setLoading(true); await analyzeMovement(); setLoading(false); setResult(true) }; return <><PageHeader title="Suspicious batch movement" subtitle="Analyze pharmaceutical batch movement across the supply chain." /><section className="card movement-input"><div><span className="eyebrow">BATCH LOOKUP</span><h3>Enter a batch ID to begin</h3></div><div className="input-action"><input value={batchId} onChange={e => setBatchId(e.target.value)} placeholder="Enter Batch ID" /><Button onClick={run} disabled={loading}>{loading ? 'Analyzing...' : <><Search size={16} /> Analyze movement</>}</Button></div></section>{result && <div className="movement-results"><section className="card"><div className="card-heading"><div><h3>Supply-chain journey</h3><p>Verified handoffs for {batchId}</p></div><RiskBadge level="Suspicious Movement" /></div><div className="timeline">{movementStages.map((s, i) => <div className="timeline-item" key={s.stage}><div className="timeline-marker"><span>{i + 1}</span></div><div className="timeline-content"><div><span className="eyebrow">{s.stage}</span><h4>{s.org}</h4><p>{s.location} · {s.date}</p></div><RiskBadge level={s.status === 'Flagged' ? 'High' : s.status === 'Delayed' ? 'Medium' : 'Low'} /></div></div>)}</div></section><section className="card anomaly-card"><span className="eyebrow">MOVEMENT ANOMALY SCORE</span><div className="big-score">74 <small>/ 100</small></div><RiskBadge level="Suspicious Movement" /><p>Batch movement contains an unexpected destination and abnormal travel duration compared with the expected route.</p><div className="factor-list">{['Unexpected location', 'Unknown distributor', 'Unusual travel time', 'Abnormal route'].map(x => <span key={x}><AlertTriangle size={14} />{x}</span>)}</div></section></div>}</> }
-function RiskAnalysis() { const navigate = useNavigate(); return <><PageHeader title="Final risk analysis" subtitle="Combined pharmaceutical supply-chain risk assessment." action={<Button variant="secondary" onClick={() => navigate('/counterfeit')}>Analyze another batch</Button>} /><div className="risk-cards">{[['Counterfeit risk', 22, 'Low'], ['Temperature risk', 68, 'High'], ['Movement risk', 74, 'High']].map(([label, score, status]) => <div className="card mini-risk" key={label}><span>{label}</span><strong>{score}<small>/ 100</small></strong><RiskBadge level={status} /><div className="progress"><i style={{ width: `${score}%` }} /></div></div>)}</div><section className="card final-card"><div><span className="eyebrow">FINAL RISK SCORE</span><div className="final-score">68 <small>/ 100</small></div><RiskBadge level="High" /><p>Temperature and movement signals require immediate review before distribution.</p></div><div className="radial-score"><div><strong>68</strong><span>HIGH RISK</span></div></div></section><section className="card"><div className="card-heading"><div><h3>Risk explanation</h3><p>Signals contributing to the final assessment.</p></div></div><div className="factor-grid"><div><Thermometer /><strong>Temperature exceeded allowed range</strong><span>+68 temperature risk</span></div><div><Truck /><strong>Batch followed an unexpected route</strong><span>+74 movement risk</span></div><div><ShieldCheck /><strong>No major packaging mismatch detected</strong><span>22 counterfeit risk</span></div></div></section></> }
-function Alerts() { const [filter, setFilter] = useState('All'); const [query, setQuery] = useState(''); const [items, setItems] = useState(alerts); const filtered = items.filter(a => (filter === 'All' || a.level === filter) && `${a.id} ${a.reason}`.toLowerCase().includes(query.toLowerCase())); return <><PageHeader title="Alerts" subtitle="Monitor high-risk and suspicious pharmaceutical batches." /><section className="card table-card"><div className="toolbar"><div className="search"><Search size={17} /><input placeholder="Search alerts..." value={query} onChange={e => setQuery(e.target.value)} /></div><div className="filters">{['All', 'High', 'Medium', 'Low'].map(f => <button className={filter === f ? 'selected' : ''} onClick={() => setFilter(f)} key={f}>{f}</button>)}</div></div><div className="table-scroll"><table><thead><tr><th>Batch ID</th><th>Risk type</th><th>Risk level</th><th>Reason</th><th>Timestamp</th><th>Status</th><th /></tr></thead><tbody>{filtered.map(a => <tr key={a.id}><td><strong>{a.id}</strong></td><td>{a.type}</td><td><RiskBadge level={a.level} /></td><td>{a.reason}</td><td>{a.time}</td><td><span className={a.unread ? 'unread' : 'read'}>{a.unread ? 'Unread' : 'Read'}</span></td><td><button className="row-action" onClick={() => setItems(items.map(x => x.id === a.id ? { ...x, unread: !x.unread } : x))}>{a.unread ? 'Mark read' : 'Mark unread'}</button></td></tr>)}</tbody></table></div></section></> }
-function History() { const [query, setQuery] = useState(''); const navigate = useNavigate(); const rows = history.filter(x => `${x.id} ${x.medicine}`.toLowerCase().includes(query.toLowerCase())); return <><PageHeader title="Analysis history" subtitle="View previous pharmaceutical batch risk analyses." /><section className="card table-card"><div className="toolbar"><div className="search"><Search size={17} /><input placeholder="Search batch ID or medicine..." value={query} onChange={e => setQuery(e.target.value)} /></div><select><option>All risk levels</option><option>High</option><option>Medium</option><option>Low</option></select></div><div className="table-scroll"><table><thead><tr><th>Batch ID</th><th>Medicine</th><th>Counterfeit</th><th>Temperature</th><th>Movement</th><th>Final risk</th><th>Status</th><th>Date</th><th /></tr></thead><tbody>{rows.map(x => <tr key={x.id}><td><strong>{x.id}</strong></td><td>{x.medicine}</td><td>{x.counterfeit}</td><td>{x.temperature}</td><td>{x.movement}</td><td><strong>{x.score}</strong></td><td><RiskBadge level={x.risk} /></td><td>{x.date}</td><td><button className="row-action" onClick={() => navigate(`/history/${x.id}`)}>View details <ChevronRight size={13} /></button></td></tr>)}</tbody></table></div></section></> }
-function Details() { const { id } = useParams(); const item = history.find(x => x.id === id) || history[0]; const navigate = useNavigate(); return <><PageHeader title="Batch analysis details" subtitle={`Complete risk assessment for ${item.id}.`} action={<Button variant="secondary" onClick={() => navigate('/history')}>Back to history</Button>} /><div className="detail-grid"><section className="card"><span className="eyebrow">BATCH INFORMATION</span><h3>{item.medicine}</h3><div className="detail-facts"><span><b>Batch ID</b>{item.id}</span><span><b>Manufacturer</b>{item.manufacturer}</span><span><b>Current location</b>{item.location}</span><span><b>Analysis date</b>{item.date}</span></div></section><section className="card"><div className="card-heading"><div><h3>Risk summary</h3><p>Signals from all analysis modules.</p></div><RiskBadge level={item.risk} /></div><div className="summary-bars">{[['Counterfeit', item.counterfeit], ['Temperature', item.temperature], ['Movement', item.movement], ['Final risk', item.score]].map(([label, value]) => <div key={label}><span>{label}<b>{value}/100</b></span><i><em style={{ width: `${value}%` }} /></i></div>)}</div></section></div><div className="detail-grid"><AnalysisCard type="Counterfeit analysis" score={item.counterfeit} status={item.counterfeit < 40 ? 'Genuine' : 'Suspicious'} /><section className="card detail-panel"><span className="eyebrow">TEMPERATURE ANALYSIS</span><h3>Cold-chain readings</h3><div className="chart"><ResponsiveContainer width="100%" height="100%"><LineChart data={temperatureData}><CartesianGrid stroke="#e2e8f0" vertical={false} /><XAxis dataKey="time" hide /><YAxis hide domain={[0, 12]} /><Line dataKey="temp" stroke="#4f46e5" strokeWidth={3} /></LineChart></ResponsiveContainer></div><RiskBadge level="Temperature Violation" /><p>Temperature exceeded the allowed range for 1h 48m.</p></section></div></> }
-function Login() { const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [error, setError] = useState(''); const navigate = useNavigate(); const submit = (e) => { e.preventDefault(); if (!email || !password) { setError('Enter your email and password to continue.'); return } localStorage.setItem('pharmatrace-auth', 'true'); navigate('/dashboard') }; return <div className="login-page"><div className="login-panel"><Logo /><div className="login-copy"><span className="eyebrow">PHARMACEUTICAL INTELLIGENCE PLATFORM</span><h1>See risk before it<br /><em>reaches the patient.</em></h1><p>PharmaTrace-AI helps your team monitor authenticity, cold-chain compliance, and batch movement in one secure workspace.</p></div><div className="login-note"><CheckCircle2 size={17} /> Built for safer pharmaceutical supply chains</div></div><div className="login-form-wrap"><form className="login-form" onSubmit={submit}><span className="eyebrow">WELCOME BACK</span><h2>Sign in to your workspace</h2><p>Use any email and password for this prototype.</p><label>Email address<input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" /></label><label>Password<input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your password" /></label><div className="form-options"><label className="check"><input type="checkbox" /> Remember me</label><button type="button" className="text-btn">Forgot password?</button></div>{error && <div className="form-error">{error}</div>}<Button>Sign in <ChevronRight size={16} /></Button><small className="demo-note"><ShieldCheck size={15} /> Demo mode · No credentials are stored</small></form></div></div> }
-function Protected() { return localStorage.getItem('pharmatrace-auth') ? <Layout><Routes><Route path="/dashboard" element={<Dashboard />} /><Route path="/counterfeit" element={<Counterfeit />} /><Route path="/temperature" element={<Temperature />} /><Route path="/movement" element={<Movement />} /><Route path="/risk-analysis" element={<RiskAnalysis />} /><Route path="/alerts" element={<Alerts />} /><Route path="/history" element={<History />} /><Route path="/history/:id" element={<Details />} /></Routes></Layout> : <Navigate to="/login" replace /> }
-export default function App() { return <BrowserRouter><Routes><Route path="/login" element={<Login />} /><Route path="/*" element={<Protected />} /></Routes></BrowserRouter> }
+import NewLayout from './components/layout/newlayout'
+
+import Login from './pages/login'
+import Dashboard from './pages/dashboard'
+import Counterfeit from './pages/counterfeit'
+import Temperature from './pages/temperature'
+import Movement from './pages/movement'
+import RiskAnalysis from './pages/riskanalysis'
+import Alerts from './pages/alerts'
+import History from './pages/history'
+import Details from './pages/historydetails'
+
+
+function Protected() {
+  const isAuthenticated =
+    localStorage.getItem(
+      'pharmatrace-auth'
+    )
+
+  if (!isAuthenticated) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+      />
+    )
+  }
+
+  return (
+    <NewLayout>
+      <Routes>
+        <Route
+          path="/dashboard"
+          element={<Dashboard />}
+        />
+
+        <Route
+          path="/counterfeit"
+          element={<Counterfeit />}
+        />
+
+        <Route
+          path="/temperature"
+          element={<Temperature />}
+        />
+
+        <Route
+          path="/movement"
+          element={<Movement />}
+        />
+
+        <Route
+          path="/risk-analysis"
+          element={<RiskAnalysis />}
+        />
+
+        <Route
+          path="/alerts"
+          element={<Alerts />}
+        />
+
+        <Route
+          path="/history"
+          element={<History />}
+        />
+
+        <Route
+          path="/history/:id"
+          element={<Details />}
+        />
+
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to="/dashboard"
+              replace
+            />
+          }
+        />
+      </Routes>
+    </NewLayout>
+  )
+}
+
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        <Route
+          path="/*"
+          element={<Protected />}
+        />
+      </Routes>
+    </BrowserRouter>
+  )
+}

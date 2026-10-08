@@ -1,65 +1,23 @@
-import { useState } from 'react'
-
-import { AlertTriangle } from 'lucide-react'
-
 import { useNavigate } from 'react-router-dom'
+
+import {
+  ShieldCheck,
+  Thermometer,
+  Truck,
+} from 'lucide-react'
 
 import PageHeader from '../components/common/pageheader'
 import RiskBadge from '../components/common/riskbadge'
 import Button from '../components/ui/button'
 
-import {
-  getRiskAnalysis,
-} from '../services/api'
-
 export default function RiskAnalysis() {
-
   const navigate = useNavigate()
 
-  const [batchId, setBatchId] =
-    useState('')
-
-  const [result, setResult] =
-    useState(null)
-
-  const [loading, setLoading] =
-    useState(false)
-
-  const [error, setError] =
-    useState('')
-
-  const runAnalysis = async () => {
-
-    if (!batchId.trim()) return
-
-    setLoading(true)
-    setError('')
-
-    try {
-
-      const response =
-        await getRiskAnalysis(
-          batchId
-        )
-
-      setResult(
-        response.data
-      )
-
-    } catch (err) {
-
-      console.error(err)
-
-      setError(
-        'Unable to load risk analysis.'
-      )
-
-    } finally {
-
-      setLoading(false)
-
-    }
-  }
+  const risks = [
+    ['Counterfeit risk', 22, 'Low'],
+    ['Temperature risk', 68, 'High'],
+    ['Movement risk', 74, 'High'],
+  ]
 
   return (
     <>
@@ -70,9 +28,7 @@ export default function RiskAnalysis() {
           <Button
             variant="secondary"
             onClick={() =>
-              navigate(
-                '/counterfeit'
-              )
+              navigate('/counterfeit')
             }
           >
             Analyze another batch
@@ -80,232 +36,116 @@ export default function RiskAnalysis() {
         }
       />
 
-      <section className="card movement-input">
+      <div className="risk-cards">
+        {risks.map(
+          ([label, score, status]) => (
+            <div
+              className="card mini-risk"
+              key={label}
+            >
+              <span>{label}</span>
 
-        <div>
-
-          <span className="eyebrow">
-            BATCH RISK LOOKUP
-          </span>
-
-          <h3>
-            Enter a batch ID
-          </h3>
-
-        </div>
-
-        <div className="input-action">
-
-          <input
-            value={batchId}
-            onChange={(event) =>
-              setBatchId(
-                event.target.value
-              )
-            }
-            placeholder="Enter Batch ID"
-          />
-
-          <Button
-            onClick={runAnalysis}
-            disabled={
-              loading ||
-              !batchId.trim()
-            }
-          >
-            {loading
-              ? 'Loading...'
-              : 'Get risk analysis'}
-          </Button>
-
-        </div>
-
-        {error && (
-          <div className="form-error">
-            {error}
-          </div>
-        )}
-
-      </section>
-
-      {result && (
-        <>
-
-          <div className="risk-cards">
-
-            {[
-              [
-                'Counterfeit risk',
-                result.counterfeit,
-              ],
-              [
-                'Temperature risk',
-                result.temperature,
-              ],
-              [
-                'Movement risk',
-                result.movement,
-              ],
-            ].map(
-              ([label, score]) => (
-
-                <div
-                  className="card mini-risk"
-                  key={label}
-                >
-
-                  <span>
-                    {label}
-                  </span>
-
-                  <strong>
-
-                    {score ?? '--'}
-
-                    <small>
-                      / 100
-                    </small>
-
-                  </strong>
-
-                  <RiskBadge
-                    level={
-                      score >= 70
-                        ? 'High'
-                        : score >= 40
-                          ? 'Medium'
-                          : 'Low'
-                    }
-                  />
-
-                  <div className="progress">
-
-                    <i
-                      style={{
-                        width: `${
-                          score || 0
-                        }%`,
-                      }}
-                    />
-
-                  </div>
-
-                </div>
-
-              )
-            )}
-
-          </div>
-
-          <section className="card final-card">
-
-            <div>
-
-              <span className="eyebrow">
-                FINAL RISK SCORE
-              </span>
-
-              <div className="final-score">
-
-                {result.final ??
-                  result.finalScore ??
-                  '--'}
-
-                <small>
-                  / 100
-                </small>
-
-              </div>
+              <strong>
+                {score}
+                <small>/ 100</small>
+              </strong>
 
               <RiskBadge
-                level={
-                  result.status ||
-                  result.risk ||
-                  'Unknown'
-                }
+                level={status}
               />
 
-              <p>
-                {result.reason ||
-                  result.message ||
-                  'Final risk assessment generated from the available supply-chain signals.'}
-              </p>
-
-            </div>
-
-            <div className="radial-score">
-
-              <div>
-
-                <strong>
-                  {result.final ??
-                    result.finalScore ??
-                    '--'}
-                </strong>
-
-                <span>
-                  {result.status ||
-                    result.risk ||
-                    'RISK'}
-                </span>
-
+              <div className="progress">
+                <i
+                  style={{
+                    width: `${score}%`,
+                  }}
+                />
               </div>
-
             </div>
+          )
+        )}
+      </div>
 
-          </section>
+      <section className="card final-card">
+        <div>
+          <span className="eyebrow">
+            FINAL RISK SCORE
+          </span>
 
-          {Array.isArray(
-            result.reasons
-          ) &&
-            result.reasons.length > 0 && (
+          <div className="final-score">
+            68 <small>/ 100</small>
+          </div>
 
-              <section className="card">
+          <RiskBadge level="High" />
 
-                <div className="card-heading">
+          <p>
+            Temperature and movement signals
+            require immediate review before
+            distribution.
+          </p>
+        </div>
 
-                  <div>
+        <div className="radial-score">
+          <div>
+            <strong>68</strong>
+            <span>HIGH RISK</span>
+          </div>
+        </div>
+      </section>
 
-                    <h3>
-                      Risk explanation
-                    </h3>
+      <section className="card">
+        <div className="card-heading">
+          <div>
+            <h3>
+              Risk explanation
+            </h3>
 
-                    <p>
-                      Signals contributing
-                      to the final assessment.
-                    </p>
+            <p>
+              Signals contributing to the final
+              assessment.
+            </p>
+          </div>
+        </div>
 
-                  </div>
+        <div className="factor-grid">
+          <div>
+            <Thermometer />
 
-                </div>
+            <strong>
+              Temperature exceeded allowed range
+            </strong>
 
-                <div className="factor-grid">
+            <span>
+              +68 temperature risk
+            </span>
+          </div>
 
-                  {result.reasons.map(
-                    (reason, index) => (
+          <div>
+            <Truck />
 
-                      <div key={index}>
+            <strong>
+              Batch followed an unexpected route
+            </strong>
 
-                        <AlertTriangle />
+            <span>
+              +74 movement risk
+            </span>
+          </div>
 
-                        <strong>
-                          {reason}
-                        </strong>
+          <div>
+            <ShieldCheck />
 
-                      </div>
+            <strong>
+              No major packaging mismatch
+              detected
+            </strong>
 
-                    )
-                  )}
-
-                </div>
-
-              </section>
-
-            )}
-
-        </>
-      )}
-
+            <span>
+              22 counterfeit risk
+            </span>
+          </div>
+        </div>
+      </section>
     </>
   )
 }

@@ -1,7 +1,4 @@
-import {
-  useEffect,
-  useState,
-} from 'react'
+import { useState } from 'react'
 
 import {
   ChevronRight,
@@ -13,90 +10,27 @@ import {
 } from 'react-router-dom'
 
 import PageHeader from '../components/common/pageheader'
-import EmptyState from '../components/common/emptystate'
-import LoadingState from '../components/common/loadingstate'
 import RiskBadge from '../components/common/riskbadge'
+import EmptyState from '../components/common/emptystate'
 
 import {
-  getHistory,
-} from '../services/api'
+  history,
+} from '../data/mockData'
 
 export default function History() {
-
   const [query, setQuery] =
     useState('')
 
-  const [riskFilter, setRiskFilter] =
-    useState('All')
-
-  const [history, setHistory] =
-    useState([])
-
-  const [loading, setLoading] =
-    useState(true)
-
   const navigate = useNavigate()
 
-  useEffect(() => {
-
-    const loadHistory =
-      async () => {
-
-        try {
-
-          const response =
-            await getHistory()
-
-          setHistory(
-            Array.isArray(
-              response.data
-            )
-              ? response.data
-              : []
-          )
-
-        } catch (error) {
-
-          console.error(
-            'Failed to load history:',
-            error
-          )
-
-        } finally {
-
-          setLoading(false)
-
-        }
-
-      }
-
-    loadHistory()
-
-  }, [])
-
-  const rows =
-    history.filter(
-      (item) => {
-
-        const matchesSearch =
-          `${item.id || ''} ${
-            item.medicine || ''
-          }`
-            .toLowerCase()
-            .includes(
-              query.toLowerCase()
-            )
-
-        const matchesRisk =
-          riskFilter === 'All' ||
-          item.risk === riskFilter
-
-        return (
-          matchesSearch &&
-          matchesRisk
+  const rows = history.filter(
+    (item) =>
+      `${item.id} ${item.medicine}`
+        .toLowerCase()
+        .includes(
+          query.toLowerCase()
         )
-      }
-    )
+  )
 
   return (
     <>
@@ -106,74 +40,39 @@ export default function History() {
       />
 
       <section className="card table-card">
-
         <div className="toolbar">
-
           <div className="search">
-
             <Search size={17} />
 
             <input
               placeholder="Search batch ID or medicine..."
               value={query}
-              onChange={(event) =>
-                setQuery(
-                  event.target.value
-                )
+              onChange={(e) =>
+                setQuery(e.target.value)
               }
             />
-
           </div>
 
-          <select
-            value={riskFilter}
-            onChange={(event) =>
-              setRiskFilter(
-                event.target.value
-              )
-            }
-          >
-
-            <option value="All">
+          <select defaultValue="">
+            <option value="">
               All risk levels
             </option>
-
             <option value="High">
               High
             </option>
-
             <option value="Medium">
               Medium
             </option>
-
             <option value="Low">
               Low
             </option>
-
           </select>
-
         </div>
 
-        {loading ? (
-
-          <LoadingState
-            message="Loading history..."
-          />
-
-        ) : rows.length === 0 ? (
-
-          <EmptyState
-            message="No analysis history available."
-          />
-
-        ) : (
-
+        {rows.length ? (
           <div className="table-scroll">
-
             <table>
-
               <thead>
-
                 <tr>
                   <th>Batch ID</th>
                   <th>Medicine</th>
@@ -185,18 +84,14 @@ export default function History() {
                   <th>Date</th>
                   <th />
                 </tr>
-
               </thead>
 
               <tbody>
-
                 {rows.map(
                   (item) => (
-
                     <tr
                       key={item.id}
                     >
-
                       <td>
                         <strong>
                           {item.id}
@@ -204,49 +99,40 @@ export default function History() {
                       </td>
 
                       <td>
-                        {item.medicine ||
-                          '-'}
+                        {item.medicine}
                       </td>
 
                       <td>
-                        {item.counterfeit ??
-                          '-'}
+                        {item.counterfeit}
                       </td>
 
                       <td>
-                        {item.temperature ??
-                          '-'}
+                        {item.temperature}
                       </td>
 
                       <td>
-                        {item.movement ??
-                          '-'}
+                        {item.movement}
                       </td>
 
                       <td>
                         <strong>
-                          {item.score ??
-                            item.final ??
-                            '-'}
+                          {item.score}
                         </strong>
                       </td>
 
                       <td>
                         <RiskBadge
-                          level={
-                            item.risk
-                          }
+                          level={item.risk}
                         />
                       </td>
 
                       <td>
-                        {item.date ||
-                          '-'}
+                        {item.date}
                       </td>
 
                       <td>
-
                         <button
+                          type="button"
                           className="row-action"
                           onClick={() =>
                             navigate(
@@ -254,30 +140,24 @@ export default function History() {
                             )
                           }
                         >
-
                           View details
-
                           <ChevronRight
                             size={13}
                           />
-
                         </button>
-
                       </td>
-
                     </tr>
-
                   )
                 )}
-
               </tbody>
-
             </table>
-
           </div>
-
+        ) : (
+          <EmptyState
+            title="No analysis history found"
+            message="No batch matches your current search."
+          />
         )}
-
       </section>
     </>
   )

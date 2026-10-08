@@ -12,20 +12,14 @@ export default function UploadBox({
 }) {
   return (
     <div className="upload-wrap">
-
       {selected ? (
-
         <div className="selected-file">
-
           <div className="file-icon">
             <Upload size={19} />
           </div>
 
           <div>
-
-            <strong>
-              {selected.name}
-            </strong>
+            <strong>{selected.name}</strong>
 
             <span>
               {selected.size
@@ -34,31 +28,22 @@ export default function UploadBox({
                   ).toFixed(1)} KB`
                 : 'Ready to analyze'}
             </span>
-
           </div>
 
           <button
-            onClick={() =>
-              onFile(null)
-            }
+            type="button"
+            onClick={() => onFile(null)}
           >
             <X size={17} />
           </button>
-
         </div>
-
       ) : (
-
         <label className="upload-box">
-
           <input
             type="file"
             accept={accept}
-            onChange={(event) =>
-              onFile(
-                event.target.files?.[0] ||
-                  null
-              )
+            onChange={(e) =>
+              onFile(e.target.files?.[0] || null)
             }
           />
 
@@ -78,11 +63,8 @@ export default function UploadBox({
               .toUpperCase()}{' '}
             · Max 10 MB
           </span>
-
         </label>
-
       )}
-
     </div>
   )
 }

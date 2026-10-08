@@ -1,79 +1,31 @@
 import { useState } from 'react'
-
-import {
-  Activity,
-  CartesianGrid,
-  LineChart,
-  Line,
-  ResponsiveContainer,
-  Thermometer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { Activity, Thermometer } from 'lucide-react'
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 import PageHeader from '../components/common/pageheader'
-import UploadBox from '../components/common/uploadbox'
-import EmptyState from '../components/common/emptystate'
+import LoadingState from '../components/common/loadingstate'
 import RiskBadge from '../components/common/riskbadge'
+import UploadBox from '../components/common/uploadbox'
 import Button from '../components/ui/button'
+import { temperatureData } from '../data/mockData'
+import { analyzeTemperature } from '../services/api'
 
-import {
-  analyzeTemperature,
-} from '../services/api'
-
-export default function Temperature() {
-
-  const [file, setFile] =
-    useState(null)
-
-  const [result, setResult] =
-    useState(null)
-
-  const [loading, setLoading] =
-    useState(false)
-
-  const [error, setError] =
-    useState('')
+function Temperature() {
+  const [file, setFile] = useState(null)
+  const [result, setResult] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const run = async () => {
-
     if (!file) return
 
     setLoading(true)
-    setError('')
-    setResult(null)
-
     try {
-
-      const response =
-        await analyzeTemperature(
-          file
-        )
-
-      setResult(
-        response.data
-      )
-
-    } catch (err) {
-
-      console.error(err)
-
-      setError(
-        'Unable to analyze the temperature file. Please check that the backend is running.'
-      )
-
+      await analyzeTemperature()
+      setResult(true)
     } finally {
-
       setLoading(false)
-
     }
   }
-
-  const records =
-    result?.records ||
-    result?.data ||
-    []
 
   return (
     <>
@@ -83,28 +35,13 @@ export default function Temperature() {
       />
 
       <div className="analysis-layout">
-
         <section className="card form-card">
-
           <div className="section-title">
-
-            <div className="step-num">
-              01
-            </div>
-
+            <div className="step-num">01</div>
             <div>
-
-              <h3>
-                Upload temperature log
-              </h3>
-
-              <p>
-                Analyze readings against the
-                safe 2°C – 8°C range.
-              </p>
-
+              <h3>Upload temperature log</h3>
+              <p>Analyze readings against the safe 2°C – 8°C range.</p>
             </div>
-
           </div>
 
           <UploadBox
@@ -114,152 +51,61 @@ export default function Temperature() {
             onFile={setFile}
           />
 
-          {error && (
-            <div className="form-error">
-              {error}
-            </div>
-          )}
-
-          <Button
-            disabled={!file || loading}
-            onClick={run}
-          >
-
+          <Button disabled={!file || loading} onClick={run}>
             {loading ? (
               <>
-                <Activity
-                  className="spin"
-                  size={16}
-                />
+                <Activity className="spin" size={16} />
                 Analyzing temperature data...
               </>
             ) : (
               <>
-                <Thermometer
-                  size={16}
-                />
+                <Thermometer size={16} />
                 Analyze temperature
               </>
             )}
-
           </Button>
-
         </section>
 
-        {result && (
+        {loading && <LoadingState message="Analyzing temperature data..." />}
+
+        {result && !loading && (
           <section className="card result-card">
-
             <div className="result-top">
-
               <div>
-
-                <span className="eyebrow">
-                  TEMPERATURE RISK SCORE
-                </span>
-
-                <h3>
-                  {result.score ?? '--'}
-                  <small>/ 100</small>
-                </h3>
-
+                <span className="eyebrow">TEMPERATURE RISK SCORE</span>
+                <h3>68 <small>/ 100</small></h3>
               </div>
-
-              <RiskBadge
-                level={
-                  result.status ||
-                  result.risk
-                }
-              />
-
+              <RiskBadge level="Temperature Violation" />
             </div>
 
-            {records.length > 0 ? (
-
-              <div className="chart large">
-
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                >
-
-                  <LineChart
-                    data={records}
-                  >
-
-                    <CartesianGrid
-                      stroke="#e2e8f0"
-                      vertical={false}
-                    />
-
-                    <XAxis
-                      dataKey="time"
-                      tickLine={false}
-                      axisLine={false}
-                    />
-
-                    <YAxis
-                      tickLine={false}
-                      axisLine={false}
-                    />
-
-                    <Tooltip />
-
-                    <Line
-                      type="monotone"
-                      dataKey="temp"
-                      stroke="#4f46e5"
-                      strokeWidth={3}
-                    />
-
-                  </LineChart>
-
-                </ResponsiveContainer>
-
-              </div>
-
-            ) : (
-
-              <EmptyState
-                message="Temperature records were not returned by the backend."
-              />
-
-            )}
+            <div className="chart large">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={temperatureData}>
+                  <CartesianGrid stroke="#e2e8f0" vertical={false} />
+                  <XAxis dataKey="time" tickLine={false} axisLine={false} />
+                  <YAxis domain={[0, 12]} tickLine={false} axisLine={false} />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey="temp"
+                    stroke="#ef4444"
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: '#fff', stroke: '#ef4444', strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
 
             <div className="stat-pills">
-
-              {result.minimum != null && (
-                <span>
-                  <b>
-                    {result.minimum}°C
-                  </b>{' '}
-                  Minimum
-                </span>
-              )}
-
-              {result.maximum != null && (
-                <span>
-                  <b>
-                    {result.maximum}°C
-                  </b>{' '}
-                  Maximum
-                </span>
-              )}
-
-              {result.violationDuration && (
-                <span>
-                  <b>
-                    {result.violationDuration}
-                  </b>{' '}
-                  Violation duration
-                </span>
-              )}
-
+              <span><b>2.1°C</b> Minimum</span>
+              <span><b>9.4°C</b> Maximum</span>
+              <span><b>01h 48m</b> Violation duration</span>
             </div>
-
           </section>
         )}
-
       </div>
     </>
   )
 }
+
+export default Temperature

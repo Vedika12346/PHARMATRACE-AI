@@ -1,225 +1,431 @@
 import { useState } from 'react'
 
 import {
-  Activity,
-  CheckCircle2,
-  ClipboardList,
+  AlertCircle,
   FileSearch,
   ShieldCheck,
+  X,
 } from 'lucide-react'
 
 import PageHeader from '../components/common/pageheader'
-import UploadBox from '../components/common/uploadbox'
 import AnalysisCard from '../components/common/analysiscard'
+import LoadingState from '../components/common/loadingstate'
 import Button from '../components/ui/button'
 
-import {
-  analyzeCounterfeit,
-} from '../services/api'
+function Counterfeit() {
+  const [file, setFile] = useState(null)
+  const [preview, setPreview] = useState(null)
 
-export default function Counterfeit() {
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState(null)
+  const [error, setError] = useState('')
 
-  const [file, setFile] =
-    useState(null)
+  // =========================
+  // SELECT IMAGE
+  // =========================
+  const handleFile = (selectedFile) => {
+    if (!selectedFile) return
 
-  const [loading, setLoading] =
-    useState(false)
+    setError('')
+    setResult(null)
 
-  const [result, setResult] =
-    useState(null)
+    const allowedTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+    ]
 
-  const [error, setError] =
-    useState('')
+    // Validate file type
+    if (!allowedTypes.includes(selectedFile.type)) {
+      setError(
+        'Please upload a JPG, JPEG or PNG image.'
+      )
+      return
+    }
 
-  const run = async () => {
+    // Validate file size
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      setError(
+        'Image size should be less than 10 MB.'
+      )
+      return
+    }
 
-    if (!file) return
+    setFile(selectedFile)
+
+    const imageUrl =
+      URL.createObjectURL(selectedFile)
+
+    setPreview(imageUrl)
+  }
+
+  // =========================
+  // REMOVE IMAGE
+  // =========================
+  const removeImage = () => {
+    setFile(null)
+    setPreview(null)
+    setResult(null)
+    setError('')
+  }
+
+  // =========================
+  // ANALYZE MEDICINE
+  // =========================
+  const handleAnalyze = async () => {
+    // Check if image exists
+    if (!file) {
+      setError(
+        'Please upload a medicine package image first.'
+      )
+      return
+    }
 
     setLoading(true)
     setError('')
     setResult(null)
 
     try {
+      /*
+       * TEMPORARY DEMO ANALYSIS
+       *
+       * This will later be replaced by your
+       * actual backend API call.
+       */
 
-      const response =
-        await analyzeCounterfeit(
-          file
-        )
+      await new Promise((resolve) => {
+        setTimeout(resolve, 2000)
+      })
 
-      setResult(
-        response.data
-      )
+      // Demo JSON response
+      const response = {
+        result: 'REAL',
+        confidence: 61.42,
+
+        medicineName:
+          'Paracetamol, Propyphenazone and Caffeine Tablets',
+
+        mfgDate: null,
+        expDate: null,
+      }
+
+      // Display result
+      setResult(response)
 
     } catch (err) {
-
-      console.error(err)
-
-      setError(
-        'Unable to analyze the medicine image. Please check that the backend is running.'
+      console.error(
+        'Counterfeit analysis error:',
+        err
       )
 
+      setError(
+        'Unable to analyze the image. Please try again.'
+      )
     } finally {
-
       setLoading(false)
-
     }
   }
 
   return (
     <>
+      {/* =========================
+          PAGE HEADER
+      ========================== */}
+
       <PageHeader
-        title="Counterfeit medicine detection"
-        subtitle="Upload a medicine package image to analyze authenticity."
+        title="Counterfeit Medicine"
+        subtitle="AI-based visual screening of pharmaceutical package images."
       />
 
-      <div className="analysis-layout">
+      <div className="counterfeit-page">
 
-        <section className="card form-card">
+        {/* =========================
+            MAIN TWO COLUMN LAYOUT
+        ========================== */}
 
-          <div className="section-title">
+        <div className="counterfeit-grid">
 
-            <div className="step-num">
-              01
+          {/* =================================
+              LEFT SIDE - UPLOAD CARD
+          ================================= */}
+
+          <section className="card upload-card">
+
+            {/* CARD HEADER */}
+            <div className="card-heading">
+              <div>
+                <span className="eyebrow">
+                  MEDICINE IMAGE
+                </span>
+
+                <h3>
+                  Upload package image
+                </h3>
+
+                <p>
+                  Upload a clear image of the
+                  medicine package for visual
+                  screening.
+                </p>
+              </div>
             </div>
 
-            <div>
 
-              <h3>
-                Upload package image
-              </h3>
+            {/* =================================
+                UPLOAD AREA
+            ================================= */}
 
-              <p>
-                Use a clear image of the
-                front packaging.
-              </p>
+            {!file ? (
 
-            </div>
+              /* -------------------------------
+                 NO IMAGE SELECTED
+              -------------------------------- */
 
-          </div>
+              <label className="upload-box">
 
-          <UploadBox
-            accept=".jpg,.jpeg,.png"
-            kind="package image"
-            selected={file}
-            onFile={setFile}
-          />
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png"
+                  onChange={(event) => {
+                    const selectedFile =
+                      event.target.files?.[0] || null
 
-          {error && (
-            <div className="form-error">
-              {error}
-            </div>
-          )}
+                    handleFile(selectedFile)
 
-          <Button
-            disabled={
-              !file || loading
-            }
-            onClick={run}
-          >
-
-            {loading ? (
-              <>
-                <Activity
-                  className="spin"
-                  size={16}
+                    // Allows selecting same file again
+                    event.target.value = ''
+                  }}
                 />
-                Analyzing medicine package...
-              </>
+
+                <div className="upload-icon">
+                  <FileSearch size={26} />
+                </div>
+
+                <strong>
+                  Upload medicine package
+                </strong>
+
+                <span>
+                  Drag and drop or <u>browse</u>
+                </span>
+
+                <small>
+                  JPG, JPEG, PNG · Maximum 10 MB
+                </small>
+
+              </label>
+
             ) : (
-              <>
-                <FileSearch
-                  size={16}
-                />
-                Analyze medicine
-              </>
+
+              /* -------------------------------
+                 IMAGE SELECTED
+              -------------------------------- */
+
+              <div className="selected-image">
+
+                {/* IMAGE HEADER */}
+                <div className="selected-image-header">
+
+                  <div>
+                    <span className="eyebrow">
+                      SELECTED IMAGE
+                    </span>
+
+                    <strong>
+                      {file.name}
+                    </strong>
+                  </div>
+
+                  {/* REMOVE IMAGE */}
+                  <button
+                    type="button"
+                    className="remove-image"
+                    onClick={removeImage}
+                    aria-label="Remove image"
+                  >
+                    <X size={17} />
+                  </button>
+
+                </div>
+
+
+                {/* IMAGE PREVIEW */}
+                <div className="image-preview">
+
+                  <img
+                    src={preview}
+                    alt="Uploaded medicine package"
+                  />
+
+                </div>
+
+              </div>
             )}
 
-          </Button>
 
-        </section>
+            {/* =================================
+                ACTION BUTTONS
+                ALWAYS VISIBLE
+            ================================= */}
 
-        {result && (
-          <AnalysisCard
-            type="Medicine authenticity"
-            score={result.score}
-            status={result.status}
-            details={
-              result.message ||
-              result.reason
-            }
-          />
-        )}
+            <div className="upload-actions">
 
-        <section className="card info-card">
+              {/* CHANGE IMAGE */}
+              {file && (
+                <label
+                  htmlFor="change-medicine-image"
+                  className="change-image"
+                >
+                  Change image
 
-          <div className="card-heading">
+                  <input
+                    id="change-medicine-image"
+                    type="file"
+                    accept=".jpg,.jpeg,.png"
+                    hidden
+                    onChange={(event) => {
+                      const selectedFile =
+                        event.target.files?.[0] || null
 
-            <div>
+                      handleFile(selectedFile)
 
-              <h3>
-                What we analyze
-              </h3>
+                      event.target.value = ''
+                    }}
+                  />
+                </label>
+              )}
 
-              <p>
-                Our visual intelligence checks
-                key authenticity signals.
-              </p>
+
+              {/* ANALYZE MEDICINE */}
+              <Button
+                type="button"
+                onClick={handleAnalyze}
+                disabled={loading}
+              >
+                <FileSearch size={16} />
+
+                {loading
+                  ? 'Analyzing...'
+                  : 'Analyze medicine'}
+              </Button>
 
             </div>
+
+
+            {/* =================================
+                ERROR MESSAGE
+            ================================= */}
+
+            {error && (
+              <div className="screening-error">
+
+                <AlertCircle size={17} />
+
+                <span>
+                  {error}
+                </span>
+
+              </div>
+            )}
+
+          </section>
+
+
+          {/* =================================
+              RIGHT SIDE - RESULT
+          ================================= */}
+
+          <div className="result-column">
+
+            {/* -------------------------------
+                LOADING STATE
+            -------------------------------- */}
+
+            {loading && (
+              <section className="card result-placeholder">
+
+                <LoadingState
+                  message="Analyzing medicine package..."
+                />
+
+              </section>
+            )}
+
+
+            {/* -------------------------------
+                RESULT AFTER ANALYSIS
+            -------------------------------- */}
+
+            {!loading && result && (
+              <AnalysisCard
+                result={result.result}
+                confidence={result.confidence}
+                medicineName={result.medicineName}
+                mfgDate={result.mfgDate}
+                expDate={result.expDate}
+              />
+            )}
+
+
+            {/* -------------------------------
+                INITIAL STATE
+            -------------------------------- */}
+
+            {!loading && !result && (
+              <section className="card result-placeholder">
+
+                <div className="placeholder-icon">
+                  <ShieldCheck size={27} />
+                </div>
+
+                <span className="eyebrow">
+                  VISUAL SCREENING
+                </span>
+
+                <h3>
+                  Ready to analyze
+                </h3>
+
+                <p>
+                  Upload a medicine package image
+                  and click{' '}
+
+                  <strong>
+                    Analyze medicine
+                  </strong>{' '}
+
+                  to view the screening result.
+                </p>
+
+              </section>
+            )}
 
           </div>
 
-          <div className="info-grid">
+        </div>
 
-            <div>
 
-              <ShieldCheck size={18} />
+        {/* =================================
+            DISCLAIMER
+        ================================= */}
 
-              <strong>
-                Packaging similarity
-              </strong>
+        <section className="card screening-info">
 
-              <span>
-                Compare visual patterns
-                against trusted references.
-              </span>
+          <div className="info-icon">
+            <ShieldCheck size={21} />
+          </div>
 
-            </div>
+          <div>
+            <h3>
+              About visual screening
+            </h3>
 
-            <div>
-
-              <ClipboardList
-                size={18}
-              />
-
-              <strong>
-                OCR extraction
-              </strong>
-
-              <span>
-                Read batch, date, and
-                manufacturer details.
-              </span>
-
-            </div>
-
-            <div>
-
-              <CheckCircle2
-                size={18}
-              />
-
-              <strong>
-                Master data match
-              </strong>
-
-              <span>
-                Validate extracted
-                information.
-              </span>
-
-            </div>
-
+            <p>
+              PharmaTrace-AI provides a preliminary
+              visual screening of pharmaceutical
+              packaging. The result should not be
+              considered laboratory authentication.
+            </p>
           </div>
 
         </section>
@@ -228,3 +434,5 @@ export default function Counterfeit() {
     </>
   )
 }
+
+export default Counterfeit
